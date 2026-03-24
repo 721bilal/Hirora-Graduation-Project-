@@ -53,11 +53,14 @@ const register = async (req, res) => {
 
 // @desc    login user
 // @route   POST /api/auth/login
+// controllers/authController.js
+
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;   // add role
 
   try {
-    const user = await User.findOne({ email });
+    // role & email
+    const user = await User.findOne({ email, role });
 
     if (user && (await bcrypt.compare(password, user.password))) {
       res.json({
@@ -68,7 +71,7 @@ const login = async (req, res) => {
         token: generateToken(user._id)
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password' });
+      res.status(401).json({ message: 'Invalid email, password, or role' });
     }
   } catch (error) {
     console.error(error);
