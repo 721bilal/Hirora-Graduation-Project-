@@ -7,10 +7,14 @@ const {
   createJob,
   updateJob,
   getJobApplications,
-  updateApplicationStatus
+  updateApplicationStatus,
+  createCompany   // <-- New
 } = require('../controllers/employerController');
 
 router.use(protect, authorize('employer'));
+
+// Company creation (new)
+router.post('/company', createCompany);
 
 // dashboard
 router.get('/dashboard', getDashboard);
