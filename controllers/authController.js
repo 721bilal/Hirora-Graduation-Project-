@@ -65,9 +65,11 @@ const register = async (req, res) => {
   }
 };
 
-// دالة login كما هي بدون تغيير
+// @desc    login user
+// @route   POST /api/auth/login
 const login = async (req, res) => {
   const { email, password } = req.body;
+
   try {
     const user = await User.findOne({ email });
     if (user && (await bcrypt.compare(password, user.password))) {
@@ -79,7 +81,7 @@ const login = async (req, res) => {
         token: generateToken(user._id)
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password' });
+      res.status(401).json({ message: 'Invalid email, password, or role' });
     }
   } catch (error) {
     console.error(error);
