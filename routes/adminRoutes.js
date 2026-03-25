@@ -7,12 +7,21 @@ const {
   updateCompanyStatus,
   getJobs,
   deleteJob,
-  getApplications
+  getApplications,
+  getEmployers,            // استيراد الدالة الجديدة
+  createCompany            // سنضيفها لاحقًا
 } = require('../controllers/adminController');
 
 // admin only routes
 router.use(protect, authorize('admin'));
 
+router.get('/employers', getEmployers);
+
+router.route('/companies')
+  .get(getCompanies)
+  .post(createCompany);   // إضافة الـ POST
+
+  
 // dashboard
 router.get('/dashboard', getDashboardStats);
 

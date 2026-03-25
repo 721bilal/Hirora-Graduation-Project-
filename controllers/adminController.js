@@ -3,6 +3,16 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const User = require('../models/User');
 
+const getEmployers = async (req, res) => {
+  try {
+    const employers = await User.find({ role: 'employer' }).select('name email _id');
+    res.json(employers);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // @desc    dashboard stats
 // @route   GET /api/admin/dashboard
 const getDashboardStats = async (req, res) => {
@@ -138,11 +148,46 @@ const getApplications = async (req, res) => {
   }
 };
 
+// @desc    إنشاء شركة جديدة
+// @route   POST /api/admin/companies
+// @access  Private (Admin only)
+const createCompany = async (req, res) => {
+  try {
+    const { name, industry, location, size, owner } = req.body;
+
+    // التحقق من وجود صاحب الشركة وأنه من نوع employer
+    const ownerUser = await User.findById(owner);
+    if (!ownerUser) {
+      return res.status(404).json({ message: 'Owner user not found' });
+    }
+    if (ownerUser.role !== 'employer') {
+      return res.status(400).json({ message: 'Owner must be an employer' });
+    }
+
+    // إنشاء الشركة
+    const company = await Company.create({
+      name,
+      industry,
+      location,
+      size,
+      owner,
+      status: 'active' // افتراضي
+    });
+
+    res.status(201).json(company);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getCompanies,
   updateCompanyStatus,
   getJobs,
   deleteJob,
-  getApplications
+  getApplications,
+  getEmployers,
+  createCompany
 };
