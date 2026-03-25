@@ -6,25 +6,16 @@ const {
   getJobDetails,
   applyToJob,
   getMyApplications,
-  saveJob,
-  getSavedJobs
+  getMyData   // استيراد الدالة الجديدة
 } = require('../controllers/jobSeekerController');
 
-// all routes require auth + jobseeker role
 router.use(protect, authorize('jobseeker'));
 
-// job search (restricted to applicants)
+router.get('/my-data', getMyData);   // المسار الجديد
+
 router.get('/jobs', searchJobs);
 router.get('/jobs/:id', getJobDetails);
-
-// apply to job
 router.post('/jobs/:id/apply', applyToJob);
-
-// my applications
 router.get('/applications', getMyApplications);
-
-// save job (optional - may need SavedJob model)
-// router.post('/jobs/:id/save', saveJob);
-// router.get('/saved-jobs', getSavedJobs);
 
 module.exports = router;
