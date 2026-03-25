@@ -7,7 +7,9 @@ const {
   createJob,
   updateJob,
   getJobApplications,
-  updateApplicationStatus
+  updateApplicationStatus,
+  deleteJob,   // ← استيراد الدالة الجديدة
+  getAllApplications 
 } = require('../controllers/employerController');
 
 router.use(protect, authorize('employer'));
@@ -23,7 +25,10 @@ router.route('/jobs')
   .post(createJob);
 
 router.route('/jobs/:id')
-  .put(updateJob);
+  .put(updateJob)
+  .delete(deleteJob);   // ← إضافة مسار DELETE
+
+router.get('/applications', getAllApplications);
 
 // job applicants
 router.get('/jobs/:jobId/applications', getJobApplications);

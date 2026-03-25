@@ -156,11 +156,34 @@ const getMyData = async (req, res) => {
   }
 };
 
+// @desc    الحصول على إحصائيات الطلبات فقط
+// @route   GET /api/jobseeker/applications/stats
+// @access  Private (Job Seeker only)
+const getApplicationStats = async (req, res) => {
+  try {
+    const applications = await Application.find({ applicant: req.user._id });
+    
+    const stats = {
+      total: applications.length,
+      pending: applications.filter(a => a.status === 'pending').length,
+      reviewing: applications.filter(a => a.status === 'reviewing').length,
+      shortlisted: applications.filter(a => a.status === 'shortlisted').length,
+      accepted: applications.filter(a => a.status === 'accepted').length,
+      rejected: applications.filter(a => a.status === 'rejected').length
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 module.exports = {
   searchJobs,
   getJobDetails,
   applyToJob,
   getMyApplications,
-  getMyData
+  getMyData,
+  getApplicationStats
 };

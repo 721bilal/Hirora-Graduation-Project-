@@ -6,7 +6,8 @@ const {
   getJobDetails,
   applyToJob,
   getMyApplications,
-  getMyData   // استيراد الدالة الجديدة
+  getMyData,
+  getApplicationStats   // استيراد الدالة الجديدة
 } = require('../controllers/jobSeekerController');
 
 router.use(protect, authorize('jobseeker'));
@@ -17,5 +18,5 @@ router.get('/jobs', searchJobs);
 router.get('/jobs/:id', getJobDetails);
 router.post('/jobs/:id/apply', applyToJob);
 router.get('/applications', getMyApplications);
-
+router.get('/applications/stats', getApplicationStats);
 module.exports = router;

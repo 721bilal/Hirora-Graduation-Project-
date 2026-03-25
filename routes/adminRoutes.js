@@ -8,8 +8,10 @@ const {
   getJobs,
   deleteJob,
   getApplications,
-  getEmployers,            // استيراد الدالة الجديدة
-  createCompany            // سنضيفها لاحقًا
+  getEmployers,
+  createCompany,
+  updateCompany,    // ← جديد
+  deleteCompany     // ← جديد
 } = require('../controllers/adminController');
 
 // admin only routes
@@ -17,19 +19,26 @@ router.use(protect, authorize('admin'));
 
 router.get('/employers', getEmployers);
 
-router.route('/companies')
-  .get(getCompanies)
-  .post(createCompany);   // إضافة الـ POST
 
-  
+
+
 // dashboard
 router.get('/dashboard', getDashboardStats);
 
-// companies management
+// مسارات الشركات
 router.route('/companies')
-  .get(getCompanies);
+  .get(getCompanies)
+  .post(createCompany);
+
+// مسارات شركة مفردة
+router.route('/companies/:id')
+  .put(updateCompany)      // ← تعديل
+  .delete(deleteCompany);  // ← حذف
+
+// الحفاظ على المسار القديم لتغيير الحالة (اختياري، يمكن دمجه في updateCompany)
 router.put('/companies/:id/status', updateCompanyStatus);
 
+// companies management
 // jobs management
 router.route('/jobs')
   .get(getJobs);

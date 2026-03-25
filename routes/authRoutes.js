@@ -1,8 +1,8 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { register, login } = require('../controllers/authController');
-
+const { register, login, getMyData } = require('../controllers/authController'); // استيراد
+const { protect } = require('../middleware/auth'); // middleware للتحقق من التوكن
 const router = express.Router();
 
 // إعداد مكان تخزين الملفات واسم الملف
@@ -36,6 +36,8 @@ const upload = multer({
 
 // نقطة التسجيل: تقبل حقلين (JSON + ملف)
 // نستخدم upload.single('cv') حيث 'cv' هو اسم الحقل في الـ form-data
+router.get('/me', protect, getMyData);
+
 router.post('/register', upload.single('cv'), register);
 
 router.post('/login', login);

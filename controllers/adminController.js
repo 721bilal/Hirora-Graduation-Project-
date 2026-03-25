@@ -79,11 +79,133 @@ const getDashboardStats = async (req, res) => {
 
 // @desc    get companies list
 // @route   GET /api/admin/companies
+
+// @desc    الحصول على قائمة الشركات مع عدد الوظائف
+// @route   GET /api/admin/companies
+// @access  Private (Admin only)
+
+// @desc    الحصول على قائمة الشركات مع عدد الوظائف
+// @route   GET /api/admin/companies
+// @access  Private (Admin only)
 const getCompanies = async (req, res) => {
   try {
-    const companies = await Company.find().populate('owner', 'name email');
-    res.json(companies);
+    const companies = await Company.aggregate([
+      {
+        $lookup: {
+          from: 'jobs',           // اسم مجموعة jobs في MongoDB (عادة بصيغة الجمع)
+          localField: '_id',
+          foreignField: 'company',
+          as: 'jobsList'
+        }
+      },
+      {
+        $addFields: {
+          jobsPosted: { $size: '$jobsList' }
+        }
+      },
+      {
+        $project: { jobsList: 0 } // إزالة حقل jobsList من النتيجة
+      }
+    ]);
+
+    // إضافة معلومات صاحب الشركة (owner) باستخدام populate بعد الـ aggregate
+    // لاحظ أن aggregate لا يقوم populate تلقائيًا، لذا نستخدم حلقة أو populate منفصل
+    // ولكن يمكن استخدام populate بعد الـ aggregate عن طريق إرجاع الـ _id ثم استعلام منفصل.
+    // بديل: استخدام mongoose populate بعد find العادي ثم إضافة jobsPosted يدويًا.
+    // إليك طريقة بديلة أبسط:
+    // const companies = await Company.find().populate('owner', 'name email');
+    // ثم نضيف jobsPosted لكل شركة باستخدام Promise.all.
+    
+    // الطريقة الأفضل (تجنب المشاكل مع populate):
+    const companiesWithOwner = await Company.find().populate('owner', 'name email');
+    const companiesWithJobsCount = await Promise.all(
+      companiesWithOwner.map(async (company) => {
+        const jobsCount = await Job.countDocuments({ company: company._id });
+        return {
+          ...company.toObject(),
+          jobsPosted: jobsCount
+        };
+      })
+    );
+    
+    res.json(companiesWithJobsCount);
   } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    تحديث بيانات شركة
+// @route   PUT /api/admin/companies/:id
+// @access  Private (Admin only)
+const updateCompany = async (req, res) => {
+  try {
+    const { name, industry, location, size, status, owner } = req.body;
+    
+    // البحث عن الشركة
+    const company = await Company.findById(req.params.id);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+    
+    // إذا تم تغيير owner، تحقق من أن المستخدم الجديد من نوع employer
+    if (owner && owner !== company.owner.toString()) {
+      const newOwner = await User.findById(owner);
+      if (!newOwner) {
+        return res.status(404).json({ message: 'New owner not found' });
+      }
+      if (newOwner.role !== 'employer') {
+        return res.status(400).json({ message: 'Owner must be an employer' });
+      }
+    }
+    
+    // تحديث الحقول
+    if (name) company.name = name;
+    if (industry) company.industry = industry;
+    if (location) company.location = location;
+    if (size) company.size = size;
+    if (status) company.status = status;
+    if (owner) company.owner = owner;
+    
+    await company.save();
+    
+    // إعادة الشركة مع بيانات صاحبها
+    const updatedCompany = await Company.findById(company._id).populate('owner', 'name email');
+    res.json(updatedCompany);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    حذف شركة (مع كل الوظائف والطلبات المرتبطة)
+// @route   DELETE /api/admin/companies/:id
+// @access  Private (Admin only)
+const deleteCompany = async (req, res) => {
+  try {
+    const company = await Company.findById(req.params.id);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+    
+    // الحصول على جميع وظائف الشركة
+    const jobs = await Job.find({ company: company._id });
+    const jobIds = jobs.map(job => job._id);
+    
+    // حذف جميع الطلبات المرتبطة بهذه الوظائف
+    if (jobIds.length > 0) {
+      await Application.deleteMany({ job: { $in: jobIds } });
+    }
+    
+    // حذف الوظائف
+    await Job.deleteMany({ company: company._id });
+    
+    // حذف الشركة
+    await company.deleteOne();
+    
+    res.json({ message: 'Company and all associated jobs and applications deleted successfully' });
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -181,6 +303,10 @@ const createCompany = async (req, res) => {
   }
 };
 
+// @desc    حذف وظيفة (مع جميع الطلبات المرتبطة)
+// @route   DELETE /api/employer/jobs/:id
+// @access  Private (Employer only)
+
 module.exports = {
   getDashboardStats,
   getCompanies,
@@ -189,5 +315,7 @@ module.exports = {
   deleteJob,
   getApplications,
   getEmployers,
-  createCompany
+  createCompany, 
+  updateCompany,    // ← جديد
+  deleteCompany     // ← جديد
 };
