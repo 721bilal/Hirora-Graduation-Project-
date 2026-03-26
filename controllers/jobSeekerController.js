@@ -197,6 +197,9 @@ const getApplicationStats = async (req, res) => {
 // @desc    تحديث الملف الشخصي للمتقدم (شامل رفع CV)
 // @route   PUT /api/jobseeker/profile
 // @access  Private (Job Seeker only)
+// @desc    تحديث الملف الشخصي للمتقدم (بما في ذلك رفع CV جديد)
+// @route   PUT /api/jobseeker/profile
+// @access  Private (Job Seeker only)
 const updateProfile = async (req, res) => {
   try {
     const { name, phone, skills, experience } = req.body;
@@ -214,7 +217,6 @@ const updateProfile = async (req, res) => {
 
     // إذا تم رفع ملف CV جديد
     if (req.file) {
-      // حذف الملف القديم اختياري (يمكن تركه)
       user.profile.resume = `/uploads/${req.file.filename}`;
     }
 

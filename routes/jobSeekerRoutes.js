@@ -7,7 +7,8 @@ const {
   applyToJob,
   getMyApplications,
   getMyData,
-  getApplicationStats   // استيراد الدالة الجديدة
+  getApplicationStats,
+  updateProfile   // استيراد الدالة الجديدة
 } = require('../controllers/jobSeekerController');
 
 router.use(protect, authorize('jobseeker'));
