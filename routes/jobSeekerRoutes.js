@@ -19,4 +19,13 @@ router.get('/jobs/:id', getJobDetails);
 router.post('/jobs/:id/apply', applyToJob);
 router.get('/applications', getMyApplications);
 router.get('/applications/stats', getApplicationStats);
+
+const upload = require('../middleware/upload');
+
+// ... باقي المسارات
+
+// تحديث الملف الشخصي (بما في ذلك رفع CV جديد)
+router.put('/profile', protect, upload.single('cv'), updateProfile);
+
+router.post('/jobs/:id/apply', protect, upload.single('cv'), applyToJob);
 module.exports = router;

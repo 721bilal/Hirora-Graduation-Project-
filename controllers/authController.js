@@ -68,11 +68,18 @@ const register = async (req, res) => {
 // @desc    login user
 // @route   POST /api/auth/login
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body; // استقبال role من الـ body
 
   try {
     const user = await User.findOne({ email });
     if (user && (await bcrypt.compare(password, user.password))) {
+      // إذا تم إرسال role في الطلب، تحقق من تطابقه مع دور المستخدم الفعلي
+      if (role && user.role !== role) {
+        return res.status(403).json({ 
+          message: `Invalid role. You are a ${user.role}, not a ${role}.` 
+        });
+      }
+
       res.json({
         _id: user._id,
         name: user.name,
@@ -81,7 +88,7 @@ const login = async (req, res) => {
         token: generateToken(user._id)
       });
     } else {
-      res.status(401).json({ message: 'Invalid email, password, or role' });
+      res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
     console.error(error);
@@ -105,4 +112,4 @@ const getMyData = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMyData};
+module.exports = { register, login, getMyData };

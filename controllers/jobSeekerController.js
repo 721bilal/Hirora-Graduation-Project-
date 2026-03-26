@@ -77,7 +77,7 @@ const applyToJob = async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    // Check duplicate
+    // التحقق من عدم التقديم سابقًا
     const existingApplication = await Application.findOne({
       job: job._id,
       applicant: req.user._id
@@ -86,25 +86,40 @@ const applyToJob = async (req, res) => {
       return res.status(400).json({ message: 'Already applied to this job' });
     }
 
-    // Applicant data
+    // قراءة البيانات النصية من الـ Body (مع multer، تكون النصوص في req.body)
+    const { phone, experience, coverLetter, skills } = req.body;
+
+    // تحديد مسار الـ CV:
+    // - إذا تم رفع ملف جديد، استخدمه.
+    // - وإلا استخدم الـ CV المخزن في الملف الشخصي.
+    let resumePath = null;
+    if (req.file) {
+      resumePath = `/uploads/${req.file.filename}`;
+    } else if (req.user.profile && req.user.profile.resume) {
+      resumePath = req.user.profile.resume;
+    } else {
+      return res.status(400).json({ message: 'CV is required. Please upload a file or update your profile.' });
+    }
+
     const applicationData = {
       job: job._id,
       applicant: req.user._id,
       company: job.company._id,
+      status: 'pending',
       applicantDetails: {
         name: req.user.name,
         email: req.user.email,
-        phone: req.body.phone || req.user.profile?.phone,
-        experience: req.body.experience || req.user.profile?.experience,
-        resume: req.body.resume || req.user.profile?.resume,
-        coverLetter: req.body.coverLetter,
-        skills: req.body.skills || req.user.profile?.skills
+        phone: phone || req.user.profile?.phone,
+        experience: experience || req.user.profile?.experience,
+        resume: resumePath,
+        coverLetter: coverLetter,
+        skills: skills ? skills.split(',').map(s => s.trim()) : (req.user.profile?.skills || [])
       }
     };
 
     const application = await Application.create(applicationData);
 
-    // Update applicants count
+    // تحديث عدد المتقدمين في الوظيفة
     job.applicantsCount = (job.applicantsCount || 0) + 1;
     await job.save();
 
@@ -179,11 +194,52 @@ const getApplicationStats = async (req, res) => {
   }
 };
 
+// @desc    تحديث الملف الشخصي للمتقدم (شامل رفع CV)
+// @route   PUT /api/jobseeker/profile
+// @access  Private (Job Seeker only)
+const updateProfile = async (req, res) => {
+  try {
+    const { name, phone, skills, experience } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // تحديث الحقول النصية
+    if (name) user.name = name;
+    if (phone) user.profile.phone = phone;
+    if (skills) user.profile.skills = skills.split(',').map(s => s.trim());
+    if (experience) user.profile.experience = experience;
+
+    // إذا تم رفع ملف CV جديد
+    if (req.file) {
+      // حذف الملف القديم اختياري (يمكن تركه)
+      user.profile.resume = `/uploads/${req.file.filename}`;
+    }
+
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profile: user.profile
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 module.exports = {
   searchJobs,
   getJobDetails,
   applyToJob,
   getMyApplications,
   getMyData,
-  getApplicationStats
+  getApplicationStats,
+  updateProfile
 };
