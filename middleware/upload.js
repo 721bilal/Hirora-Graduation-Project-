@@ -11,14 +11,16 @@ const storage = multer.diskStorage({
   }
 });
 
+// تعديل فلتر الملفات: السماح فقط بـ PDF
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /pdf|doc|docx/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-  if (mimetype && extname) {
-    return cb(null, true);
+  // التحقق من امتداد الملف ونوع MIME
+  const isPdfExt = path.extname(file.originalname).toLowerCase() === '.pdf';
+  const isPdfMime = file.mimetype === 'application/pdf';
+
+  if (isPdfExt && isPdfMime) {
+    cb(null, true); // قبول الملف
   } else {
-    cb(new Error('Only .pdf, .doc, .docx files are allowed'));
+    cb(new Error('Only PDF files are allowed'), false); // رفض الملف
   }
 };
 
