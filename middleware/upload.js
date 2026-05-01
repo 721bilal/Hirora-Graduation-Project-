@@ -1,9 +1,18 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+// تحديد مجلد الرفع حسب البيئة
+const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : 'uploads';
+
+// إنشاء المجلد إذا لم يكن موجوداً
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -11,22 +20,17 @@ const storage = multer.diskStorage({
   }
 });
 
-// تعديل فلتر الملفات: السماح فقط بـ PDF
 const fileFilter = (req, file, cb) => {
-  // التحقق من امتداد الملف ونوع MIME
-  const isPdfExt = path.extname(file.originalname).toLowerCase() === '.pdf';
-  const isPdfMime = file.mimetype === 'application/pdf';
-
-  if (isPdfExt && isPdfMime) {
-    cb(null, true); // قبول الملف
+  if (file.mimetype === 'application/pdf') {
+    cb(null, true);
   } else {
-    cb(new Error('Only PDF files are allowed'), false); // رفض الملف
+    cb(new Error('Only PDF files are allowed'), false);
   }
 };
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter
 });
 

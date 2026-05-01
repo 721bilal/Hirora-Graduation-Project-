@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs'); // لإدارة إنشاء المجلد
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -11,17 +12,22 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// خدمة الملفات الثابتة (للملفات المرفوعة)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// تحديد مجلد الرفع (يختلف بين البيئات)
+const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : 'uploads';
+
+// إنشاء المجلد إذا لم يكن موجوداً (لخدمة الملفات الثابتة ورفع الملفات)
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// خدمة الملفات الثابتة من هذا المجلد تحت مسار /uploads
+app.use('/uploads', express.static(uploadDir));
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const employerRoutes = require('./routes/employerRoutes');
 const jobSeekerRoutes = require('./routes/jobSeekerRoutes');
-
-// خدمة الملفات الثابتة (للملفات المرفوعة)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
