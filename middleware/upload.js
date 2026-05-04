@@ -5,18 +5,19 @@ const fs = require('fs');
 // تحديد مجلد الرفع حسب البيئة
 const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : 'uploads';
 
-// إنشاء المجلد إذا لم يكن موجوداً
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (req, file, cb) => {
+    // التأكد من وجود المجلد
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
     cb(null, uploadDir);
   },
-  filename: function (req, file, cb) {
+  filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    // إضافة بادئة للملفات الخاصة بـ CV مثلاً
+    const prefix = (file.fieldname === 'cv') ? 'cv-' : '';
+    cb(null, prefix + file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
@@ -30,8 +31,8 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: fileFilter
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 module.exports = upload;
