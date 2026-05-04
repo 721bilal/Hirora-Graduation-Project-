@@ -19,8 +19,6 @@ const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : 'uplo
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
-
-// خدمة الملفات الثابتة
 app.use('/uploads', express.static(uploadDir));
 
 // Routes
