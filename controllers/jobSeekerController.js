@@ -1,7 +1,7 @@
 const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Company = require('../models/Company');
-
+const User = require('../models/User');
 // @desc    Search jobs
 // @route   GET /api/jobseeker/jobs
 const searchJobs = async (req, res) => {

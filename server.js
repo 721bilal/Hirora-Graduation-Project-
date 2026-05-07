@@ -8,20 +8,22 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// 1. Middleware
 app.use(cors());
 app.use(express.json());
 
-// تحديد مجلد الرفع (يجب أن يتطابق مع الـ uploadDir في upload.js)
-const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : 'uploads';
+// 2. توحيد مسار الرفع (يجب أن يكون مطلقاً ومطابقاً لملف upload.js)
+const uploadDir = path.join(__dirname, 'uploads');
 
-// إنشاء المجلد إذا لم يكن موجوداً
+// إنشاء المجلد إذا لم يكن موجوداً لضمان عدم حدوث ايرور ENOENT
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
+
+// 3. جعل مجلد الرفع متاحاً للوصول إليه عبر المتصفح (Static Folder)
 app.use('/uploads', express.static(uploadDir));
 
-// Routes
+// 4. Routes
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const employerRoutes = require('./routes/employerRoutes');
@@ -32,15 +34,22 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/employer', employerRoutes);
 app.use('/api/jobseeker', jobSeekerRoutes);
 
-// الاتصال بقاعدة البيانات
+// 5. الاتصال بقاعدة البيانات
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+    .then(() => console.log('✅ MongoDB connected successfully'))
+    .catch(err => console.error('❌ MongoDB connection error:', err));
 
+// Root route
 app.get('/', (req, res) => {
-  res.send('Hirora API is running');
+    res.send('Hirora API is running...');
+});
+
+// 6. التعامل مع الأخطاء العامة (Optional but recommended)
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!', error: err.message });
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });

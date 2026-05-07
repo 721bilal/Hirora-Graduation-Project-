@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
+const upload = require('../middleware/upload'); // استيراد الميدل وير في البداية
 const {
   searchJobs,
   getJobDetails,
@@ -8,25 +9,25 @@ const {
   getMyApplications,
   getMyData,
   getApplicationStats,
-  updateProfile   // استيراد الدالة الجديدة
+  updateProfile
 } = require('../controllers/jobSeekerController');
 
+// حماية جميع المسارات التالية لدور الـ jobseeker فقط
 router.use(protect, authorize('jobseeker'));
 
-router.get('/my-data', getMyData);   // المسار الجديد
+// مسارات البيانات الشخصية
+router.get('/my-data', getMyData);
+router.get('/applications/stats', getApplicationStats);
+router.get('/applications', getMyApplications);
 
+// مسار تحديث البروفايل (مع رفع CV)
+router.put('/profile', upload.single('cv'), updateProfile);
+
+// مسارات الوظائف
 router.get('/jobs', searchJobs);
 router.get('/jobs/:id', getJobDetails);
-router.post('/jobs/:id/apply', applyToJob);
-router.get('/applications', getMyApplications);
-router.get('/applications/stats', getApplicationStats);
 
-const upload = require('../middleware/upload');
+// مسار التقديم على وظيفة (تم دمجه ليكون مساراً واحداً يقبل رفع ملف)
+router.post('/jobs/:id/apply', upload.single('cv'), applyToJob);
 
-// ... باقي المسارات
-
-// تحديث الملف الشخصي (بما في ذلك رفع CV جديد)
-router.put('/profile', protect, upload.single('cv'), updateProfile);
-
-router.post('/jobs/:id/apply', protect, upload.single('cv'), applyToJob);
 module.exports = router;
